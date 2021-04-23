@@ -17,6 +17,7 @@ export function MyPlants(){
     const [myPlants, setMyPlants] = useState<PlantProps[]>([]);
     const [loading, setLoading] = useState(true);
     const [nextWaterd, setNextWaterd] = useState<string>();    
+    const [hasAnyPlant, setHasAnyPlant] = useState(false);    
 
     function handleRemove(plant: PlantProps){
         Alert.alert('Remover', `Deseja remover a ${plant.name}?`,
@@ -34,33 +35,47 @@ export function MyPlants(){
 
     function onConfirmeRemove(plant: PlantProps): ((value?: string | undefined) => void) | undefined {
         return async () => {
-            try {
+            try {                
                 await plantRemove(plant);
-                setMyPlants((oldData) => (
-                    oldData.filter((item) => item.id !== plant.id)
-                ));
+
+                var novaLista = myPlants.filter((item) => item.id !== plant.id);
+                setMyPlants(novaLista);
+                setHasAnyPlant(novaLista.length > 0);
             } catch (error) {
             }
         };
     }
 
     async function loadStorageData(){
-        const plantsStorage = await loadPlants();
+        try {
+            const plantsStorage = await loadPlants();
 
-        const nextTime = formatDistance(
-            new Date(plantsStorage[0].dateTimeNotification).getTime(),
-            new Date().getTime(),
-            {locale: ptBR}
-        );
+            setHasAnyPlant(plantsStorage.length > 0);
 
-        setNextWaterd(`Não esqueça de regar a ${plantsStorage[0].name} daqui á ${nextTime}.`);
-        setMyPlants(plantsStorage);            
-        setLoading(false);
+            if (hasAnyPlant){            
+                const nextTime = formatDistance(
+                    new Date(plantsStorage[0].dateTimeNotification).getTime(),
+                    new Date().getTime(),
+                    {locale: ptBR}
+                );
+        
+                setNextWaterd(`Não esqueça de regar a ${plantsStorage[0].name} daqui á ${nextTime}.`);
+                setMyPlants(plantsStorage);
+
+            } else 
+                setNextWaterd(`Você ainda não tem nenhuma plantinha para regar`);
+            
+            setLoading(false);
+
+        } catch (error) {
+            console.log(error);
+            setLoading(false);
+        }
     }
 
     useEffect(() => {       
         loadStorageData();
-    },[]);
+    },[hasAnyPlant]);
 
     if (loading)
         return <Load/>
@@ -74,22 +89,19 @@ export function MyPlants(){
                 <Text style={styles.spotlightText}>
                     {nextWaterd}
                 </Text>
-            </View> 
-
-            <View style={styles.plants}>
-                <Text style={styles.plantsTitle}>
-                    Próximas regadas.
-                </Text>
-                <FlatList
-                    data={myPlants}
-                    keyExtractor={(item)=> String(item.id)}
-                    renderItem={({item})=>(
-                        <PlantCardSecondary data={item} handleRemove={() => {handleRemove(item)}}/>                        
-                    )}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{flex:1}}
-                />
-            </View>        
+            </View>                 
+                <View style={styles.plants}>
+                    { hasAnyPlant && <Text style={styles.plantsTitle}> Próximas regadas. </Text> }    
+                    <FlatList
+                        data={myPlants}
+                        keyExtractor={(item)=> String(item.id)}
+                        renderItem={({item})=>(
+                            <PlantCardSecondary data={item} handleRemove={() => {handleRemove(item)}}/>                        
+                        )}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{flex:1}}
+                    />
+                </View>
         </View>
     );
 }
@@ -105,6 +117,7 @@ const styles = StyleSheet.create({
     },
     spotlight:{
         backgroundColor: colors.blue_light,        
+        marginTop: 20,
         paddingHorizontal: 20,
         borderRadius: 20,
         height: 110,

@@ -41,7 +41,7 @@ export function PlantSave(){
     }  
 
     async function handleSave(){        
-        try {
+        try {            
             await plantSave({...plant, dateTimeNotification: selectedDateTime});
 
             navigation.navigate('Confirmation', {
@@ -51,9 +51,6 @@ export function PlantSave(){
                 icon: 'hug',
                 nextScreen: 'MyPlants'
             });
-
-
-
         } catch (error) {
             Alert.alert(error);
         }
